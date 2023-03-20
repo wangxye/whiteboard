@@ -24,17 +24,69 @@ func TestS_Execute(t *testing.T) {
 		},
 	}
 	// data := map[interface{}]interface{}{"a": []map[interface{}]interface{}{{"b": 42}}}
+	// data := map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": 42}}}
 
 	s, err := NewS("a", 0, "b")
 	if err != nil {
 		t.Errorf("Unexpected error returned: %v", err)
 	}
 
-	result := s.Execute(data)
+	result, _ := s.Execute(data)
 	if result != 42 {
 		t.Errorf("Expected 42, but got %v", result)
 	}
 }
+
+func TestS_Execute_single(t *testing.T) {
+	data := map[interface{}]interface{}{
+		"a": []map[interface{}]interface{}{
+			{"b": 42},
+			{"c": 32},
+		},
+	}
+	// data := map[interface{}]interface{}{"a": []map[interface{}]interface{}{{"b": 42}}}
+
+	s, err := NewS("a", 1, "c")
+	if err != nil {
+		t.Errorf("Unexpected error returned: %v", err)
+	}
+
+	result, _ := s.Execute(data)
+	if result != 32 {
+		t.Errorf("Expected 32, but got %v", result)
+	}
+}
+
+func TestS_Execute_str(t *testing.T) {
+	// test case 2
+	s2, err := NewS("a", "b", "c")
+
+	if err != nil {
+		t.Errorf("Unexpected error returned: %v", err)
+	}
+
+	source2 := map[string]interface{}{"a": map[string]interface{}{"b": map[string]interface{}{"c": "hello"}}}
+	res2, _ := s2.Execute(source2)
+	if res2 != "hello" {
+		t.Errorf("Test case 2 failed: expected %v but got %v", "hello", res2)
+	}
+}
+
+func TestS_Execute_int(t *testing.T) {
+	s1, err := NewS("a", 0, "b")
+	if err != nil {
+		t.Errorf("Unexpected error returned: %v", err)
+	}
+	source1 := map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": 42}}}
+	res1, err := s1.Execute(source1)
+	if err != nil {
+		t.Errorf("Unexpected error returned: %v", err)
+	}
+	if res1 != 42 {
+		t.Errorf("Test case 1 failed: expected %v but got %v", 42, res1)
+	}
+}
+
 func mySortFunc(args ...interface{}) interface{} {
 	value := args[0]
 	key := args[1].(string)

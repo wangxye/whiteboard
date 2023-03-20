@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 type selector interface {
@@ -33,21 +34,42 @@ func NewS(path ...interface{}) (*S, error) {
 	return &S{Path: path}, nil
 }
 
-func (s *S) Execute(source interface{}) interface{} {
+func (s *S) Execute(source interface{}) (interface{}, error) {
+
+	v := reflect.ValueOf(source)
 	for _, key := range s.Path {
-		if m, ok := source.(map[interface{}]interface{}); ok {
-			source = m[key]
-		} else if s, ok := source.([]map[interface{}]interface{}); ok && key == 0 {
-			// Special case for the first key when the source is a slice of maps
-			source = s[0]
-		} else {
-			// Handle unexpected value types, e.g. by converting to JSON
-			jsonStr, _ := json.Marshal(source)
-			panic(fmt.Sprintf("Cannot convert %v to map: %s", source, jsonStr))
+		if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+			if v.IsNil() {
+				return reflect.Value{}, fmt.Errorf("nil pointer encountered in path")
+			}
+			v = v.Elem()
+		}
+		switch v.Kind() {
+		case reflect.Struct:
+			field := v.FieldByName(key.(string))
+			if !field.IsValid() {
+				return reflect.Value{}, fmt.Errorf("no such field %s", key)
+			}
+			v = field
+		case reflect.Slice, reflect.Array:
+			index := key.(int)
+			if index < 0 || index >= v.Len() {
+				return reflect.Value{}, fmt.Errorf("index out of range: %d", index)
+			}
+			v = v.Index(index)
+			// break
+		case reflect.Map:
+			key := reflect.ValueOf(key)
+			elem := v.MapIndex(key)
+			if !elem.IsValid() {
+				return reflect.Value{}, fmt.Errorf("no such key %s", key)
+			}
+			v = elem
+		default:
+			return reflect.Value{}, fmt.Errorf("cannot access path element %s of non-composite type %s", key, v.Kind())
 		}
 	}
-	return source
-
+	return v.Interface(), nil
 }
 
 type F struct {
