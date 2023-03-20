@@ -1,6 +1,10 @@
 package whiteboard
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+)
 
 type selector interface {
 	Execute(source interface{}) interface{}
@@ -31,71 +35,39 @@ func NewS(path ...interface{}) (*S, error) {
 
 func (s *S) Execute(source interface{}) interface{} {
 	for _, key := range s.Path {
-		source = source.(map[interface{}]interface{})[key]
-	}
-	return source
-}
-
-/**
-
-type K struct {
-	val interface{}
-}
-
-func (k K) Execute(source interface{}) interface{} {
-	return k.val
-}
-
-type S struct {
-	path interface{}
-}
-
-func (s *S) Execute(source interface{}) interface{} {
-	path, ok := s.path.([]interface{})
-	if !ok {
-		return nil
-	}
-
-	for _, key := range path {
-		if m, ok := source.(map[string]interface{}); ok {
-			value, exists := m[key.(string)]
-			if exists {
-				source = value
-			} else {
-				return nil
-			}
+		if m, ok := source.(map[interface{}]interface{}); ok {
+			source = m[key]
+		} else if s, ok := source.([]map[interface{}]interface{}); ok && key == 0 {
+			// Special case for the first key when the source is a slice of maps
+			source = s[0]
 		} else {
-			return nil
+			// Handle unexpected value types, e.g. by converting to JSON
+			jsonStr, _ := json.Marshal(source)
+			panic(fmt.Sprintf("Cannot convert %v to map: %s", source, jsonStr))
 		}
 	}
-
 	return source
+
 }
-**/
 
 type F struct {
-	Func   func(interface{}, ...interface{}) interface{}
-	Args   []interface{}
-	Kwargs map[interface{}]interface{}
+	Func func(interface{}, ...interface{}) interface{}
+	Args []interface{}
+	// Kwargs map[interface{}]interface{}
 }
 
 func NewF(f func(interface{}, ...interface{}) interface{}, args ...interface{}) *F {
-	kwargs := map[interface{}]interface{}{}
-	for i := 0; i < len(args); i += 2 {
-		kwargs[args[i]] = args[i+1]
-	}
-	return &F{Func: f, Args: args, Kwargs: kwargs}
+	return &F{Func: f, Args: args}
 }
 
 func (f *F) Execute(value interface{}) interface{} {
-	var args []interface{}
-	for _, arg := range f.Args {
-		if _, ok := f.Kwargs[arg]; !ok {
-			args = append(args, arg)
-		}
+	args := f.Args
+	if len(args) == 0 { // add this line to check if args is empty
+		args = make([]interface{}, 1)
 	}
 	args = append([]interface{}{value}, args...)
-	return f.Func(args)
+	if len(args) == 1 {
+		return f.Func(args[0])
+	}
+	return f.Func(args[0], args[1:]...)
 }
-
-//
