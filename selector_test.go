@@ -9,8 +9,8 @@ import (
 )
 
 func TestK_Execute(t *testing.T) {
-	k := NewK("Hello World")
-	result := k.Execute(nil)
+	k, _ := NewK("Hello World")
+	result, _ := k.Execute(nil)
 	if result != "Hello World" {
 		t.Errorf("Expected 'Hello World', but got %v", result)
 	}
@@ -104,7 +104,7 @@ func TestF_Execute(t *testing.T) {
 		return mySortFunc(append([]interface{}{value}, args...)...)
 	}, "key", "id")
 
-	result := f.Execute(data)
+	result, _ := f.Execute(data)
 	expected := []map[string]interface{}{{"id": 1}, {"id": 3}}
 
 	if !reflect.DeepEqual(result, expected) {
@@ -121,7 +121,7 @@ func TestF_Execute_All(t *testing.T) {
 	})
 	value1 := 10
 	expected1 := 11
-	result1 := f1.Execute(value1)
+	result1, _ := f1.Execute(value1)
 	if result1 != expected1 {
 		t.Errorf("Expected %v but got %v", expected1, result1)
 	}
@@ -134,7 +134,7 @@ func TestF_Execute_All(t *testing.T) {
 	}, "suffix", 100)
 	value2 := 10
 	expected2 := "suffix110"
-	result2 := f2.Execute(value2)
+	result2, _ := f2.Execute(value2)
 	if result2 != expected2 {
 		t.Errorf("Expected %v but got %v", expected2, result2)
 	}
@@ -149,7 +149,7 @@ func TestF_Execute_All(t *testing.T) {
 	}, 20, 30, 40)
 	value3 := 10
 	expected3 := 100
-	result3 := f3.Execute(value3)
+	result3, _ := f3.Execute(value3)
 	if result3 != expected3 {
 		t.Errorf("Expected %v but got %v", expected3, result3)
 	}
@@ -160,7 +160,7 @@ func TestF_Execute_No_args_No_kwargs(t *testing.T) {
 	})
 	value1 := 10
 	expected1 := 11
-	result1 := f1.Execute(value1)
+	result1, _ := f1.Execute(value1)
 	if result1 != expected1 {
 		t.Errorf("Expected %v but got %v", expected1, result1)
 	}
@@ -174,7 +174,7 @@ func TestF_Execute_with_kwargs(t *testing.T) {
 	}, "suffix")
 	value2 := 10
 	expected2 := "suffix10"
-	result2 := f2.Execute(value2)
+	result2, _ := f2.Execute(value2)
 	if result2 != expected2 {
 		t.Errorf("Expected %v but got %v", expected2, result2)
 	}
@@ -190,7 +190,7 @@ func TestF_Execute_with_args(t *testing.T) {
 	}, 20, 30, 40)
 	value3 := 10
 	expected3 := 100
-	result3 := f3.Execute(value3)
+	result3, _ := f3.Execute(value3)
 	if result3 != expected3 {
 		t.Errorf("Expected %v but got %v", expected3, result3)
 	}
