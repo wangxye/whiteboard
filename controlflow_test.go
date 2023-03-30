@@ -104,3 +104,60 @@ func TestAlternation_Execute_dict(t *testing.T) {
 		t.Errorf("Unexpected error: %v (expected %v)", err, expected6)
 	}
 }
+
+/**
+func TestSwitch_Execute_Example(t *testing.T) {
+	// create Switch object with cases for 'twitter' and 'mastodon', and default case for 'email'
+	ss, _ := NewS("service")
+	sh, _ = NewS("handle")
+	k, _ := NewK("@")
+	s, _ := NewS("server")
+
+	se, _ := NewS("email")
+
+	switchSelector := &Switch{
+		keySelctor: ss,
+		cases: map[interface{}]selector{
+			"twitter":  sh,
+			"mastodon": sh + k + s,
+		},
+		defaultSelector: se,
+	}
+
+	// test case for 'twitter' service
+	source := map[interface{}]interface{}{"service": "twitter", "handle": "etandel"}
+	expectedResult := "etandel"
+	result, err := switchSelector.Execute(source)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != expectedResult {
+		t.Errorf("Expected result to be %v but got %v", expectedResult, result)
+	}
+
+	// test case for 'mastodon' service
+	source = map[interface{}]interface{}{"service": "mastodon", "handle": "etandel", "server": "mastodon.social"}
+	expectedResult = "etandel@mastodon.social"
+	result, err = switchSelector.Execute(source)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != expectedResult {
+		t.Errorf("Expected result to be %v but got %v", expectedResult, result)
+	}
+
+	// test default case for 'facebook' service
+	source = map[interface{}]interface{}{"service": "facebook", "email": "email@whatever.com"}
+	expectedResult = "email@whatever.com"
+	result, err = switchSelector.Execute(source)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	if result != expectedResult {
+		t.Errorf("Expected result to be %v but got %v", expectedResult, result)
+	}
+}
+
+
+**/
+	

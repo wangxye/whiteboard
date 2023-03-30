@@ -1,5 +1,9 @@
 package whiteboard
 
+import (
+	"errors"
+)
+
 type If struct {
 	condition func(interface{}) bool
 	whenTrue  selector
@@ -38,4 +42,35 @@ func (a *Alternation) Execute(source interface{}) (interface{}, error) {
 		}
 	}
 	return nil, exc
+}
+
+type Switch struct {
+	keySelctor      selector
+	cases           map[interface{}]selector
+	defaultSelector selector
+}
+
+func (s *Switch) Execute(source map[interface{}]interface{}) (interface{}, error) {
+
+	key, err := s.keySelctor.Execute(source)
+	if err != nil {
+		return nil, err
+	}
+
+	var benderFn selector
+	var ok bool
+	if benderFn, ok = s.cases[key]; !ok {
+		if s.defaultSelector != nil {
+			benderFn = s.defaultSelector
+		} else {
+			return nil, errors.New("key not found in case container")
+		}
+	}
+
+	val, err := benderFn.Execute(source)
+	if err != nil {
+		return nil, err
+	}
+
+	return val, nil
 }
