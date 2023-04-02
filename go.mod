@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/RichardKnop/machinery/v2 v2.0.11
+	github.com/antonmedv/expr v1.12.5
 	github.com/cilium/ebpf v0.10.0 // indirect
 	github.com/derekparker/trie v0.0.0-20221221181808-1424fce0c981 // indirect
 	github.com/go-delve/delve v1.20.1 // indirect
@@ -21,5 +22,6 @@ require (
 	go.starlark.net v0.0.0-20230302034142-4b1e35fe2254 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/text v0.3.7
 	golang.org/x/tools v0.1.12
 )

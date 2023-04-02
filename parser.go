@@ -14,6 +14,8 @@ const (
 	Operator
 	// ,
 	COMMA
+	// selector
+	SELECTOR
 )
 
 type Token struct {
@@ -119,6 +121,21 @@ func (p *Parser) nextTok() *Token {
 
 	default:
 		if p.isChar(p.ch) {
+			if p.isSelectorWord(p.ch) {
+				for p.ch != ')' && p.nextCh() == nil {
+
+				}
+				if p.ch == ')' {
+					p.nextCh()
+					tok = &Token{
+						Tok:  p.Source[start:p.offset],
+						Type: SELECTOR,
+					}
+					tok.Offset = start
+					break
+				}
+			}
+			// else {
 			for p.isWordChar(p.ch) && p.nextCh() == nil {
 			}
 			tok = &Token{
@@ -126,6 +143,8 @@ func (p *Parser) nextTok() *Token {
 				Type: Identifier,
 			}
 			tok.Offset = start
+			// }
+
 		} else if p.ch != ' ' {
 			s := fmt.Sprintf("symbol error: unknown '%v', pos [%v:]\n%s",
 				string(p.ch),
@@ -165,4 +184,10 @@ func (p *Parser) isChar(c byte) bool {
 
 func (p *Parser) isWordChar(c byte) bool {
 	return p.isChar(c) || '0' <= c && c <= '9'
+}
+
+var selectorWord string = "kKsSfF"
+
+func (p *Parser) isSelectorWord(c byte) bool {
+	return strings.IndexByte(selectorWord, c) != -1 && p.Source[p.offset+1] == '('
 }

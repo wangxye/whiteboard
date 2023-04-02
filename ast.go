@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 var precedence = map[string]int{"+": 20, "-": 20, "*": 40, "/": 40, "%": 40, "^": 60}
@@ -28,6 +29,11 @@ type FunCallerExprAST struct {
 	Arg  []ExprAST
 }
 
+type SelectorExprAST struct {
+	Name     string
+	Selector selector
+}
+
 func (n NumberExprAST) toStr() string {
 	return fmt.Sprintf(
 		"NumberExprAST:%s",
@@ -48,6 +54,13 @@ func (n FunCallerExprAST) toStr() string {
 	return fmt.Sprintf(
 		"FunCallerExprAST:%s",
 		n.Name,
+	)
+}
+
+func (s SelectorExprAST) toStr() string {
+	return fmt.Sprintf(
+		"SelectorExprAST:%s",
+		s.Name,
 	)
 }
 
@@ -76,6 +89,7 @@ func NewAST(toks []*Token, s string) *AST {
 	return a
 }
 
+//Parser entry
 func (a *AST) ParseExpression() ExprAST {
 	a.depth++ // called depth
 	lhs := a.parsePrimary()
@@ -89,6 +103,7 @@ func (a *AST) ParseExpression() ExprAST {
 	return r
 }
 
+// Get the next Token
 func (a *AST) getNextToken() *Token {
 	a.currIndex++
 	if a.currIndex < len(a.Tokens) {
@@ -98,6 +113,7 @@ func (a *AST) getNextToken() *Token {
 	return nil
 }
 
+// Get the operation priority
 func (a *AST) getTokPrecedence() int {
 	if p, ok := precedence[a.currTok.Tok]; ok {
 		return p
@@ -105,6 +121,7 @@ func (a *AST) getTokPrecedence() int {
 	return -1
 }
 
+//Parse the number and generate a NumberExprAST node
 func (a *AST) parseNumber() NumberExprAST {
 	f64, err := strconv.ParseFloat(a.currTok.Tok, 64)
 	if err != nil {
@@ -121,6 +138,49 @@ func (a *AST) parseNumber() NumberExprAST {
 	}
 	a.getNextToken()
 	return n
+}
+
+func (a *AST) parseSelector() SelectorExprAST {
+	name := a.currTok.Tok
+	selectorType := name[0]
+	selectorParam := name[1 : len(name)-1]
+	parts := strings.Split(selectorParam, ",")
+	var ifaceSlice []interface{}
+	var err error
+	for _, part := range parts {
+		ifaceSlice = append(ifaceSlice, part)
+	}
+	s := SelectorExprAST{}
+	switch selectorType {
+	case 'K':
+		if len(parts) == 1 {
+			s.Name = string(selectorType)
+			s.Selector, _ = NewK(ifaceSlice[0])
+		} else {
+			a.Err = errors.New(
+				fmt.Sprintf("Selector `%s` is out of limit\n%s",
+					s.Name,
+					ErrPos(a.source, a.currTok.Offset)))
+		}
+	case 'S':
+
+		s.Name = string(selectorType)
+		s.Selector, err = NewS(ifaceSlice[0:]...)
+		if err != nil {
+			a.Err = errors.New(
+				fmt.Sprintf("Selector `%s` %s \n%s",
+					s.Name,
+					err.Error(),
+					ErrPos(a.source, a.currTok.Offset)))
+		}
+
+	case 'F':
+		s.Name = string(selectorType)
+		// TODO: Complete extraction function string
+
+	}
+
+	return s
 }
 
 func (a *AST) parseFunCallerOrConst() ExprAST {
@@ -179,6 +239,8 @@ func (a *AST) parseFunCallerOrConst() ExprAST {
 	}
 }
 
+// Get a node and return ExprAST
+// All possible types are processed here and the corresponding types are resolved
 func (a *AST) parsePrimary() ExprAST {
 	switch a.currTok.Type {
 	case Identifier:
@@ -229,11 +291,15 @@ func (a *AST) parsePrimary() ExprAST {
 				a.currTok.Tok,
 				ErrPos(a.source, a.currTok.Offset)))
 		return nil
+	case SELECTOR:
+		return a.parseSelector()
 	default:
 		return nil
 	}
 }
 
+//Loop to obtain the priority of the operator, recursing the higher priority into deeper nodes
+//This is the most important algorithm for generating the correct AST structure, and it must be carefully read and understood
 func (a *AST) parseBinOpRHS(execPrec int, lhs ExprAST) ExprAST {
 	for {
 		tokPrec := a.getTokPrecedence()
