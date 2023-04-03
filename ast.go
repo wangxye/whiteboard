@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/traefik/yaegi/interp"
 )
 
 var precedence = map[string]int{"+": 20, "-": 20, "*": 40, "/": 40, "%": 40, "^": 60}
@@ -177,7 +179,20 @@ func (a *AST) parseSelector() SelectorExprAST {
 	case 'F':
 		s.Name = string(selectorType)
 		// TODO: Complete extraction function string
+		// expr, err := eval.Parse(ifaceSlice[0])
+		// program, err := expr.Compile(parts[0], expr.Env(Env{}))
 
+		i := interp.New(interp.Options{})
+		v, err := i.Eval(parts[0])
+		if err != nil {
+			a.Err = errors.New(
+				fmt.Sprintf("Selector `%s` %s \n%s",
+					s.Name,
+					err.Error(),
+					ErrPos(a.source, a.currTok.Offset)))
+		}
+		fn := v.Interface().(func(interface{}, ...interface{}) interface{})
+		s.Selector = NewF(fn, ifaceSlice[1:]...)
 	}
 
 	return s

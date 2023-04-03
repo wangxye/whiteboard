@@ -18,10 +18,11 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/cobra v1.6.1 // indirect
-	github.com/traefik/yaegi v0.15.0 // indirect
+	github.com/traefik/yaegi v0.15.1
 	go.starlark.net v0.0.0-20230302034142-4b1e35fe2254 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.3.7
 	golang.org/x/tools v0.1.12
+	google.golang.org/genproto v0.0.0-20210207032614-bba0dbe2a9ea
 )
