@@ -33,10 +33,15 @@ func IsValidMatch(v reflect.Value, key reflect.Value) bool {
 		return key.Type().AssignableTo(mapKeyType)
 	}
 	// check whether v is an array
-	if v.Kind() == reflect.Array {
+	if v.Kind() == reflect.Array || v.Kind() == reflect.Slice {
+		fmt.Printf("%v -> %v\n", v.Kind(), key.Kind())
 
+		if key.Kind() != reflect.Int {
+			return false
+		}
 		// determines whether key is a valid subscript
-		keyValue := reflect.ValueOf(key)
+		// keyValue := reflect.ValueOf(key)
+		keyValue := key
 		keyInt := int(keyValue.Int())
 		if keyValue.IsValid() && keyValue.Type().Kind() == reflect.Int && keyInt >= 0 && keyInt < v.Len() {
 			// gets the value of the element with the keyInt index
@@ -107,7 +112,9 @@ func Float64ToStr(f float64) string {
 // register a new function to use in expressions
 // name: be register function name. the same function name only needs to be registered once.
 // argc: this is a number of parameter signatures. should be -1, 0, or a positive integer
-//       -1 variable-length argument; >=0 fixed numbers argument
+//
+//	-1 variable-length argument; >=0 fixed numbers argument
+//
 // fun:  function handler
 func RegFunction(name string, argc int, fun func(...ExprAST) float64) error {
 	if len(name) == 0 {

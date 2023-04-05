@@ -35,7 +35,7 @@ func NewS(path ...interface{}) (*S, error) {
 
 func (s *S) Execute(source interface{}) (interface{}, error) {
 	if source == nil {
-		return nil, fmt.Errorf("invalid reflect.Valu")
+		return nil, fmt.Errorf("KeyError:invalid reflect.Value")
 	}
 	v := reflect.ValueOf(source)
 
@@ -46,6 +46,7 @@ func (s *S) Execute(source interface{}) (interface{}, error) {
 		}
 		v = field
 	}
+
 	return v.Interface(), nil
 }
 
@@ -54,7 +55,7 @@ func (s *S) findFieldByKind(v reflect.Value, key interface{}) (reflect.Value, er
 	k := reflect.ValueOf(key)
 
 	if !IsValidMatch(v, k) {
-		return reflect.Value{}, fmt.Errorf("type inconsistency %s", k.Kind())
+		return reflect.Value{}, fmt.Errorf("type inconsistency %s- > %s", k.Kind(), v.Kind())
 	}
 
 	if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
@@ -102,61 +103,65 @@ func (s *S) findFieldByKind(v reflect.Value, key interface{}) (reflect.Value, er
 	return v, nil
 }
 
-/**
-func (s *S) Execute(source interface{}) (interface{}, error) {
-	if source == nil {
-		return nil, fmt.Errorf("nil interface encountered")
-	}
-	v := reflect.ValueOf(source)
+/*
+*
 
-	for _, key := range s.Path {
-		if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-			if v.IsNil() {
-				return reflect.Value{}, fmt.Errorf("nil encountered in path")
-			}
-			v = v.Elem()
+	func (s *S) Execute(source interface{}) (interface{}, error) {
+		if source == nil {
+			return nil, fmt.Errorf("nil interface encountered")
 		}
-		switch v.Kind() {
-		case reflect.Struct:
-			field := v.FieldByName(key.(string))
-			if !field.IsValid() {
-				return reflect.Value{}, fmt.Errorf("no such field %s", key)
-			}
-			v = field
-			if v.Type().Kind() == reflect.Struct {
-				var err error
-				// v, err = s.Execute(v, key)
-				if err != nil {
-					return reflect.Value{}, err
+		v := reflect.ValueOf(source)
+
+		for _, key := range s.Path {
+			if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+				if v.IsNil() {
+					return reflect.Value{}, fmt.Errorf("nil encountered in path")
 				}
+				v = v.Elem()
 			}
-		case reflect.Slice, reflect.Array:
-			// TODO:	interface {} is string, not int
-			index := key.(int)
-			if index < 0 || index >= v.Len() {
-				return reflect.Value{}, fmt.Errorf("index out of range: %d", index)
+			switch v.Kind() {
+			case reflect.Struct:
+				field := v.FieldByName(key.(string))
+				if !field.IsValid() {
+					return reflect.Value{}, fmt.Errorf("no such field %s", key)
+				}
+				v = field
+				if v.Type().Kind() == reflect.Struct {
+					var err error
+					// v, err = s.Execute(v, key)
+					if err != nil {
+						return reflect.Value{}, err
+					}
+				}
+			case reflect.Slice, reflect.Array:
+				// TODO:	interface {} is string, not int
+				index := key.(int)
+				if index < 0 || index >= v.Len() {
+					return reflect.Value{}, fmt.Errorf("index out of range: %d", index)
+				}
+				v = v.Index(index)
+				// break
+			case reflect.Map:
+				//value of type int is not assignable to type string
+				key := reflect.ValueOf(key)
+				fmt.Print(key.Kind())
+				if !IsMapKeyTypeEqual(v, key) {
+					return reflect.Value{}, fmt.Errorf("type inconsistency %s", key.Kind())
+				}
+				elem := v.MapIndex(key)
+				if !elem.IsValid() {
+					return reflect.Value{}, fmt.Errorf("no such key %s", key)
+				}
+				v = elem
+			default:
+				return reflect.Value{}, fmt.Errorf("cannot access path element %s of non-composite type %s", key, v.Kind())
 			}
-			v = v.Index(index)
-			// break
-		case reflect.Map:
-			//value of type int is not assignable to type string
-			key := reflect.ValueOf(key)
-			fmt.Print(key.Kind())
-			if !IsMapKeyTypeEqual(v, key) {
-				return reflect.Value{}, fmt.Errorf("type inconsistency %s", key.Kind())
-			}
-			elem := v.MapIndex(key)
-			if !elem.IsValid() {
-				return reflect.Value{}, fmt.Errorf("no such key %s", key)
-			}
-			v = elem
-		default:
-			return reflect.Value{}, fmt.Errorf("cannot access path element %s of non-composite type %s", key, v.Kind())
 		}
+		return v.Interface(), nil
 	}
-	return v.Interface(), nil
-}
-**/
+
+*
+*/
 type F struct {
 	Func func(interface{}, ...interface{}) interface{}
 	Args []interface{}
