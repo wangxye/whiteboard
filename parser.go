@@ -153,6 +153,7 @@ func (p *Parser) nextTok() *Token {
 			p.err = errors.New(s)
 		}
 	}
+	fmt.Printf("%v-->%d\n", tok, tok.Type)
 	return tok
 }
 
@@ -189,5 +190,8 @@ func (p *Parser) isWordChar(c byte) bool {
 var selectorWord string = "kKsSfF"
 
 func (p *Parser) isSelectorWord(c byte) bool {
-	return strings.IndexByte(selectorWord, c) != -1 && p.Source[p.offset+1] == '('
+	fmt.Printf("%d %d %d", strings.IndexByte(selectorWord, c), strings.Index(p.Source[p.offset:], "("), strings.Index(p.Source[p.offset:], ")"))
+	return strings.IndexByte(selectorWord, c) != -1 &&
+		strings.Index(p.Source[p.offset:], "(") >= 1 &&
+		strings.Index(p.Source[p.offset:], ")") >= 2
 }

@@ -135,6 +135,10 @@ func RegFunction(name string, argc int, fun func(...ExprAST) float64) error {
 // if an arithmetic runtime error occurs, a panic exception is thrown
 func ExprASTResult(expr ExprAST) float64 {
 	var l, r float64
+
+	//TODO: handle error and return a uniform result type
+	fmt.Printf("ExprASTResult-->%v\n", expr)
+
 	switch expr.(type) {
 	case BinaryExprAST:
 		ast := expr.(BinaryExprAST)
@@ -182,6 +186,9 @@ func ExprASTResult(expr ExprAST) float64 {
 		f := expr.(FunCallerExprAST)
 		def := defFunc[f.Name]
 		return def.fun(f.Arg...)
+	case SelectorExprAST:
+		// sea := expr.(SelectorExprAST)
+		// r, _ := sea.Selector.Execute(nil)
 	}
 
 	return 0.0

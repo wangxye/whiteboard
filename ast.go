@@ -61,8 +61,8 @@ func (n FunCallerExprAST) toStr() string {
 
 func (s SelectorExprAST) toStr() string {
 	return fmt.Sprintf(
-		"SelectorExprAST:%s",
-		s.Name,
+		"SelectorExprAST:%s(%v)",
+		s.Name, s.Selector,
 	)
 }
 
@@ -91,7 +91,7 @@ func NewAST(toks []*Token, s string) *AST {
 	return a
 }
 
-//Parser entry
+// Parser entry
 func (a *AST) ParseExpression() ExprAST {
 	a.depth++ // called depth
 	lhs := a.parsePrimary()
@@ -117,13 +117,14 @@ func (a *AST) getNextToken() *Token {
 
 // Get the operation priority
 func (a *AST) getTokPrecedence() int {
+	fmt.Printf("getTokPrecedence-->%v\n", a.currTok.Tok)
 	if p, ok := precedence[a.currTok.Tok]; ok {
 		return p
 	}
 	return -1
 }
 
-//Parse the number and generate a NumberExprAST node
+// Parse the number and generate a NumberExprAST node
 func (a *AST) parseNumber() NumberExprAST {
 	f64, err := strconv.ParseFloat(a.currTok.Tok, 64)
 	if err != nil {
@@ -143,20 +144,36 @@ func (a *AST) parseNumber() NumberExprAST {
 }
 
 func (a *AST) parseSelector() SelectorExprAST {
+	fmt.Printf("parseSelector-->\n")
 	name := a.currTok.Tok
-	selectorType := name[0]
-	selectorParam := name[1 : len(name)-1]
+	selectorType := strings.ToUpper(string(name[0]))
+
+	selectorParam := name[0:]
+	startIndex := strings.Index(selectorParam, "(")
+	endIndex := strings.LastIndex(selectorParam, ")")
+
+	if startIndex != -1 && endIndex != -1 {
+		selectorParam = selectorParam[0:startIndex] + selectorParam[startIndex+1:endIndex] + selectorParam[endIndex+1:]
+		// fmt.Println(selectorParam)
+	} else {
+		a.Err = errors.New(
+			fmt.Sprintf("Selector `%s` Not in a standardized format\n%s, maybe forget '(', ')'",
+				selectorType,
+				ErrPos(a.source, a.currTok.Offset)))
+	}
+
 	parts := strings.Split(selectorParam, ",")
 	var ifaceSlice []interface{}
 	var err error
 	for _, part := range parts {
 		ifaceSlice = append(ifaceSlice, part)
 	}
+	fmt.Printf("%s", ifaceSlice)
 	s := SelectorExprAST{}
 	switch selectorType {
-	case 'K':
+	case "K":
 		if len(parts) == 1 {
-			s.Name = string(selectorType)
+			s.Name = selectorType
 			s.Selector, _ = NewK(ifaceSlice[0])
 		} else {
 			a.Err = errors.New(
@@ -164,9 +181,10 @@ func (a *AST) parseSelector() SelectorExprAST {
 					s.Name,
 					ErrPos(a.source, a.currTok.Offset)))
 		}
-	case 'S':
 
-		s.Name = string(selectorType)
+	case "S":
+
+		s.Name = selectorType
 		s.Selector, err = NewS(ifaceSlice[0:]...)
 		if err != nil {
 			a.Err = errors.New(
@@ -176,8 +194,8 @@ func (a *AST) parseSelector() SelectorExprAST {
 					ErrPos(a.source, a.currTok.Offset)))
 		}
 
-	case 'F':
-		s.Name = string(selectorType)
+	case "F":
+		s.Name = selectorType
 		// TODO: Complete extraction function string
 		// expr, err := eval.Parse(ifaceSlice[0])
 		// program, err := expr.Compile(parts[0], expr.Env(Env{}))
@@ -194,7 +212,9 @@ func (a *AST) parseSelector() SelectorExprAST {
 		fn := v.Interface().(func(interface{}, ...interface{}) interface{})
 		s.Selector = NewF(fn, ifaceSlice[1:]...)
 	}
+	fmt.Printf("parseSelector-->%v\n", s)
 
+	a.getNextToken()
 	return s
 }
 
@@ -313,8 +333,8 @@ func (a *AST) parsePrimary() ExprAST {
 	}
 }
 
-//Loop to obtain the priority of the operator, recursing the higher priority into deeper nodes
-//This is the most important algorithm for generating the correct AST structure, and it must be carefully read and understood
+// Loop to obtain the priority of the operator, recursing the higher priority into deeper nodes
+// This is the most important algorithm for generating the correct AST structure, and it must be carefully read and understood
 func (a *AST) parseBinOpRHS(execPrec int, lhs ExprAST) ExprAST {
 	for {
 		tokPrec := a.getTokPrecedence()
