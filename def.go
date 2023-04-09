@@ -79,35 +79,35 @@ func defCsc(expr ...ExprAST) float64 {
 
 // abs(-2) = 2
 func defAbs(expr ...ExprAST) float64 {
-	return math.Abs(ExprASTResult(expr[0]))
+	return math.Abs(ExprASTResult(expr[0]).(float64))
 }
 
 // ceil(4.2) = ceil(4.8) = 5
 func defCeil(expr ...ExprAST) float64 {
-	return math.Ceil(ExprASTResult(expr[0]))
+	return math.Ceil(ExprASTResult(expr[0]).(float64))
 }
 
 // floor(4.2) = floor(4.8) = 4
 func defFloor(expr ...ExprAST) float64 {
-	return math.Floor(ExprASTResult(expr[0]))
+	return math.Floor(ExprASTResult(expr[0]).(float64))
 }
 
 // round(4.2) = 4
 // round(4.6) = 5
 func defRound(expr ...ExprAST) float64 {
-	return math.Round(ExprASTResult(expr[0]))
+	return math.Round(ExprASTResult(expr[0]).(float64))
 }
 
 // sqrt(4) = 2
 // sqrt(4) = abs(sqrt(4))
 // returns only the absolute value of the result
 func defSqrt(expr ...ExprAST) float64 {
-	return math.Sqrt(ExprASTResult(expr[0]))
+	return math.Sqrt(ExprASTResult(expr[0]).(float64))
 }
 
 // cbrt(27) = 3
 func defCbrt(expr ...ExprAST) float64 {
-	return math.Cbrt(ExprASTResult(expr[0]))
+	return math.Cbrt(ExprASTResult(expr[0]).(float64))
 }
 
 // max(2) = 2
@@ -118,11 +118,11 @@ func defMax(expr ...ExprAST) float64 {
 		panic(errors.New("calling function `max` must have at least one parameter."))
 	}
 	if len(expr) == 1 {
-		return ExprASTResult(expr[0])
+		return ExprASTResult(expr[0]).(float64)
 	}
-	maxV := ExprASTResult(expr[0])
+	maxV := ExprASTResult(expr[0]).(float64)
 	for i := 1; i < len(expr); i++ {
-		v := ExprASTResult(expr[i])
+		v := ExprASTResult(expr[i]).(float64)
 		maxV = math.Max(maxV, v)
 	}
 	return maxV
@@ -136,11 +136,11 @@ func defMin(expr ...ExprAST) float64 {
 		panic(errors.New("calling function `min` must have at least one parameter."))
 	}
 	if len(expr) == 1 {
-		return ExprASTResult(expr[0])
+		return ExprASTResult(expr[0]).(float64)
 	}
-	maxV := ExprASTResult(expr[0])
+	maxV := ExprASTResult(expr[0]).(float64)
 	for i := 1; i < len(expr); i++ {
-		v := ExprASTResult(expr[i])
+		v := ExprASTResult(expr[i]).(float64)
 		maxV = math.Min(maxV, v)
 	}
 	return maxV
@@ -154,5 +154,5 @@ func defNoerr(expr ...ExprAST) (r float64) {
 			r = 0
 		}
 	}()
-	return ExprASTResult(expr[0])
+	return ExprASTResult(expr[0]).(float64)
 }

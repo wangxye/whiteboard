@@ -148,7 +148,7 @@ func (a *AST) parseSelector() SelectorExprAST {
 	name := a.currTok.Tok
 	selectorType := strings.ToUpper(string(name[0]))
 
-	selectorParam := name[0:]
+	selectorParam := name[1:]
 	startIndex := strings.Index(selectorParam, "(")
 	endIndex := strings.LastIndex(selectorParam, ")")
 
@@ -163,10 +163,20 @@ func (a *AST) parseSelector() SelectorExprAST {
 	}
 
 	parts := strings.Split(selectorParam, ",")
+
 	var ifaceSlice []interface{}
 	var err error
 	for _, part := range parts {
-		ifaceSlice = append(ifaceSlice, part)
+		// fmt.Print("%v\n", part.(type))
+		if strings.Contains(part, "'") || strings.Contains(part, "\"") {
+			part = strings.ReplaceAll(part, "'", "")
+			part = strings.ReplaceAll(part, "\"", "")
+			ifaceSlice = append(ifaceSlice, part)
+		} else {
+			pf, _ := strconv.ParseFloat(part, 64)
+			ifaceSlice = append(ifaceSlice, pf)
+		}
+
 	}
 	fmt.Printf("%s", ifaceSlice)
 	s := SelectorExprAST{}
