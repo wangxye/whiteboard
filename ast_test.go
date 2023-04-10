@@ -13,17 +13,6 @@ func Test_FunctionStr_Extract(t *testing.T) {
 		return fmt.Sprintf("%s%d", a, b+v.(int))
 	}, "suffix", 100`
 
-	// Split string by comma
-	// parts := strings.Split(str, ",")
-
-	// Find function string
-	// var function string
-	// for _, part := range parts {
-	// 	if strings.Contains(part, "func") {
-	// 		function = strings.TrimSpace(part)
-	// 		break
-	// 	}
-	// }
 	pattern := `func\([^)]*\)[^{]*\{(?:[^{}]|(?R))*\}`
 	re := regexp.MustCompile(pattern)
 	function := re.FindString(str)
@@ -61,7 +50,7 @@ func Test_Fuction_AST_Binary(t *testing.T) {
 		return
 	}
 	fmt.Printf("ExprAST: %+v\n", ar)
-	// 加入下面的代码
+
 	// AST traversal -> result
 	r := ExprASTResult(ar)
 	fmt.Println("progressing ...\t", r)
@@ -94,7 +83,7 @@ func Test_Fuction_AST_Selector(t *testing.T) {
 		return
 	}
 	fmt.Printf("ExprAST: %+v\n", ar)
-	// 加入下面的代码
+
 	// AST traversal -> result
 	r := ExprASTResult(ar)
 	fmt.Println("progressing ...\t", r)
@@ -128,7 +117,7 @@ func Test_Fuction_AST_Selector_str(t *testing.T) {
 		return
 	}
 	fmt.Printf("ExprAST: %+v\n", ar)
-	// 加入下面的代码
+
 	// AST traversal -> result
 	r := ExprASTResult(ar)
 	fmt.Println("progressing ...\t", r)

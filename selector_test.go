@@ -23,8 +23,6 @@ func TestS_Execute(t *testing.T) {
 			{"c": 32},
 		},
 	}
-	// data := map[interface{}]interface{}{"a": []map[interface{}]interface{}{{"b": 42}}}
-	// data := map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": 42}}}
 
 	s, err := NewS("a", 0, "b")
 	if err != nil {
@@ -44,7 +42,6 @@ func TestS_Execute_single(t *testing.T) {
 			{"c": 32},
 		},
 	}
-	// data := map[interface{}]interface{}{"a": []map[interface{}]interface{}{{"b": 42}}}
 
 	s, err := NewS("a", 1, "c")
 	if err != nil {

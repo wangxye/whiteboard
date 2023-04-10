@@ -167,13 +167,19 @@ func (a *AST) parseSelector() SelectorExprAST {
 	var ifaceSlice []interface{}
 	var err error
 	for _, part := range parts {
-		// fmt.Print("%v\n", part.(type))
+		fmt.Printf("%v\n", part)
+
 		if strings.Contains(part, "'") || strings.Contains(part, "\"") {
 			part = strings.ReplaceAll(part, "'", "")
 			part = strings.ReplaceAll(part, "\"", "")
 			ifaceSlice = append(ifaceSlice, part)
-		} else {
+		} else if strings.Contains(part, ".") {
 			pf, _ := strconv.ParseFloat(part, 64)
+			ifaceSlice = append(ifaceSlice, pf)
+		} else {
+			// base := strings.Contains(part, "0b")?2:strings.Contains(part,"0x")
+			//TODO: check if part is 0x,0b, or otherwise
+			pf, _ := strconv.ParseInt(part, 10, 64)
 			ifaceSlice = append(ifaceSlice, pf)
 		}
 

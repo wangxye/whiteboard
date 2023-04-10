@@ -118,34 +118,43 @@ func (p *Parser) nextTok() *Token {
 		}
 		tok.Offset = start
 		err = p.nextCh()
-
-	default:
-		if p.isChar(p.ch) {
-			if p.isSelectorWord(p.ch) {
-				for p.ch != ')' && p.nextCh() == nil {
-
-				}
-				if p.ch == ')' {
-					p.nextCh()
-					tok = &Token{
-						Tok:  p.Source[start:p.offset],
-						Type: SELECTOR,
-					}
-					tok.Offset = start
-					break
-				}
-			}
-			// else {
-			for p.isWordChar(p.ch) && p.nextCh() == nil {
-			}
+	case '"':
+		p.nextCh()
+		for p.ch != '"' && p.nextCh() == nil {
+		}
+		if p.ch == '"' {
 			tok = &Token{
-				Tok:  p.Source[start:p.offset],
+				Tok:  p.Source[start+1 : p.offset],
 				Type: Identifier,
 			}
-			tok.Offset = start
-			// }
+			tok.Offset = start + 1
+			p.nextCh()
+		}
+	default:
+		if p.isSelectorWord(p.ch) {
+			for p.ch != ')' && p.nextCh() == nil {
 
-		} else if p.ch != ' ' {
+			}
+			if p.ch == ')' {
+				p.nextCh()
+				tok = &Token{
+					Tok:  p.Source[start:p.offset],
+					Type: SELECTOR,
+				}
+				tok.Offset = start
+				break
+			}
+		}
+		// else {
+		for p.isWordChar(p.ch) && p.nextCh() == nil {
+		}
+		tok = &Token{
+			Tok:  p.Source[start:p.offset],
+			Type: Identifier,
+		}
+		tok.Offset = start
+
+		if p.ch != ' ' {
 			s := fmt.Sprintf("symbol error: unknown '%v', pos [%v:]\n%s",
 				string(p.ch),
 				start,

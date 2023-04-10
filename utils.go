@@ -24,6 +24,7 @@ func IsMapKeyTypeEqual(m reflect.Value, key reflect.Value) bool {
 
 func IsValidMatch(v reflect.Value, key reflect.Value) bool {
 	// check whether v is a map type
+
 	if v.Kind() == reflect.Map {
 		// gets the key type of the map
 		mapKeyType := v.Type().Key()
@@ -33,25 +34,21 @@ func IsValidMatch(v reflect.Value, key reflect.Value) bool {
 	}
 	// check whether v is an array
 	if v.Kind() == reflect.Array || v.Kind() == reflect.Slice {
-		fmt.Printf("%v -> %v\n", v.Kind(), key.Kind())
 
-		if key.Kind() != reflect.Int {
+		if key.Kind() != reflect.Int && key.Kind() != reflect.Int64 && key.Kind() != reflect.Int32 {
+			fmt.Printf("%v -> %v return %t \n", v.Kind(), key.Kind(), key.Kind() == reflect.Int64)
 			return false
 		}
-		// determines whether key is a valid subscript
-		// keyValue := reflect.ValueOf(key)
-		keyValue := key
-		keyInt := int(keyValue.Int())
-		if keyValue.IsValid() && keyValue.Type().Kind() == reflect.Int && keyInt >= 0 && keyInt < v.Len() {
-			// gets the value of the element with the keyInt index
-			// elemValue := v.Index(keyInt)
-			// if elemValue.IsValid() {
-			// 	return true
-			// }
+
+		keyInt := int(key.Int())
+
+		if key.IsValid() && keyInt >= 0 && keyInt < v.Len() {
+			fmt.Printf("%v -> %v return %t  %v\n", v.Kind(), key.Kind(), key.Type().Kind() == reflect.Int, keyInt)
 			return true
 		}
-	}
 
+	}
+	fmt.Printf("%v/ %v -> %v /%v \n", key.Type(), key, v.Type(), v)
 	return false
 }
 
@@ -210,7 +207,6 @@ func ExprASTResult(expr ExprAST) interface{} {
 		switch v := sea.Selector.(type) {
 		case *K:
 			r, _ = sea.Selector.Execute(nil)
-
 		default:
 			panic(fmt.Sprintf("unsupported type %T in addition operation", v))
 		}
@@ -220,4 +216,79 @@ func ExprASTResult(expr ExprAST) interface{} {
 	}
 
 	return nil
+}
+
+func ExprASTResultWithContext(expr ExprAST, context interface{}) (interface{}, error) {
+	var l, r interface{}
+	// var err error
+	//TODO: handle error and return a uniform result type
+	fmt.Printf("ExprASTResult-->%v\n", expr)
+
+	switch expr.(type) {
+	case BinaryExprAST:
+		ast := expr.(BinaryExprAST)
+		l = ExprASTResult(ast.Lhs)
+		r = ExprASTResult(ast.Rhs)
+		switch ast.Op {
+		case "+":
+			// strconv.Atoi(l)
+			switch v := l.(type) {
+			case float64:
+				fl := l.(float64)
+				fr := r.(float64)
+				return fl + fr, nil
+			case string:
+				sl := l.(string)
+				sr := r.(string)
+				return sl + sr, nil
+			default:
+				panic(fmt.Sprintf("unsupported type %T in addition operation", v))
+			}
+
+		case "-":
+			fl := l.(float64)
+			fr := r.(float64)
+			return fl - fr, nil
+		case "*":
+			fl := l.(float64)
+			fr := r.(float64)
+			return fl * fr, nil
+		case "/":
+			if r.(float64) == 0 {
+				errMsg := fmt.Sprintf("violation of arithmetic specification: a division by zero in ExprASTResult: [%g/%g]", l, r)
+				return nil, errors.New(errMsg)
+			}
+			fl := l.(float64)
+			fr := r.(float64)
+			return fl / fr, nil
+		case "%":
+			if r.(float64) == 0 {
+				errMsg := fmt.Sprintf("violation of arithmetic specification: a division by zero in ExprASTResult: [%g/%g]", l, r)
+				return nil, errors.New(errMsg)
+			}
+			il := int(l.(float64))
+			ir := int(r.(float64))
+			return il % ir, nil
+		case "^":
+			fl := l.(float64)
+			fr := r.(float64)
+			res := Pow(fl, fr)
+			return res, nil
+		default:
+			panic(fmt.Sprintf("unsupported operator %s", ast.Op))
+		}
+	case NumberExprAST:
+		return expr.(NumberExprAST).Val, nil
+	case FunCallerExprAST:
+		f := expr.(FunCallerExprAST)
+		def := defFunc[f.Name]
+		return def.fun(f.Arg...), nil
+	case SelectorExprAST:
+		sea := expr.(SelectorExprAST)
+		// var r interface{}
+		r, err := sea.Selector.Execute(context)
+		return r, err
+	}
+
+	return nil, nil
 }
