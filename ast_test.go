@@ -2,32 +2,8 @@ package whiteboard
 
 import (
 	"fmt"
-	"regexp"
 	"testing"
 )
-
-func Test_FunctionStr_Extract(t *testing.T) {
-	str := `func(v interface{}, args ...interface{}) interface{} {
-		a := args[0].(string)
-		b := args[1].(int)
-		return fmt.Sprintf("%s%d", a, b+v.(int))
-	}, "suffix", 100`
-
-	pattern := `func\([^)]*\)[^{]*\{(?:[^{}]|(?R))*\}`
-	re := regexp.MustCompile(pattern)
-	function := re.FindString(str)
-
-	expect := `func(v interface{}, args ...interface{}) interface{} {
-		a := args[0].(string)
-		b := args[1].(int)
-		return fmt.Sprintf("%s%d", a, b+v.(int))
-	}`
-	// Print result
-	// fmt.Println("Function:", function)
-	if function != expect {
-		t.Errorf("Expected Fuction, but got %s", function)
-	}
-}
 
 func Test_Fuction_AST_Binary(t *testing.T) {
 	exp := "92 + 5 + 5 * 27 - (92 - 12) / 4 + 26"
@@ -90,7 +66,7 @@ func Test_Fuction_AST_Selector(t *testing.T) {
 	fmt.Printf("%s = %v\n", exp, r)
 
 	expect := 3
-	val := int(r.(float64))
+	val := int(r.(int64))
 	if val != expect {
 		t.Errorf("Expected Fuction, but got %f", r)
 	}

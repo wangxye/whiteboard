@@ -144,6 +144,10 @@ func ExprASTResult(expr ExprAST) interface{} {
 		case "+":
 			// strconv.Atoi(l)
 			switch v := l.(type) {
+			case int64, int, int16:
+				il := l.(int64)
+				ir := r.(int64)
+				return il + ir
 			case float64:
 				fl := l.(float64)
 				fr := r.(float64)
@@ -233,7 +237,11 @@ func ExprASTResultWithContext(expr ExprAST, context interface{}) (interface{}, e
 		case "+":
 			// strconv.Atoi(l)
 			switch v := l.(type) {
-			case float64:
+			case int64, int, int16:
+				il := l.(int64)
+				ir := r.(int64)
+				return il + ir, nil
+			case float64, float32:
 				fl := l.(float64)
 				fr := r.(float64)
 				return fl + fr, nil

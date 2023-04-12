@@ -168,7 +168,7 @@ func (a *AST) parseSelector() SelectorExprAST {
 	var err error
 	for _, part := range parts {
 		fmt.Printf("%v\n", part)
-
+		part = strings.TrimSpace(part)
 		if strings.Contains(part, "'") || strings.Contains(part, "\"") {
 			part = strings.ReplaceAll(part, "'", "")
 			part = strings.ReplaceAll(part, "\"", "")

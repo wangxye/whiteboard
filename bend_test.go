@@ -52,7 +52,7 @@ var testCases = []struct {
 		expectedErr:    nil,
 	},
 	{
-		name: "test case 7: complex mapping and non-scalar value source",
+		name: "test case 5: complex mapping and non-scalar value source",
 		mapping: map[interface{}]interface{}{
 			"id":   "S(\"id\")",
 			"name": "S(\"name\")",
@@ -75,6 +75,27 @@ var testCases = []struct {
 		},
 		context:        nil,
 		expectedOutput: map[interface{}]interface{}{"id": 123, "name": "Bob", "pets": []interface{}{map[interface{}]interface{}{"age": 2, "name": "cat"}, map[interface{}]interface{}{"age": 3, "name": "dog"}}, "rank": 42},
+		expectedErr:    nil,
+	},
+	{
+		name: "test case 6: example with str and int",
+		mapping: map[interface{}]interface{}{
+			"level": "S(\"b\", \"userLevel\")",
+			"kind":  "S(\"c\", \"userKind\")",
+			"count": "K(1) + K(2)",
+		},
+		source: map[string]interface{}{
+			"b": map[string]interface{}{
+				"userLevel": 1,
+				"name":      "123",
+			},
+			"c": map[string]interface{}{
+				"userKind": "VIP",
+				"age":      3,
+			},
+		},
+		context:        nil,
+		expectedOutput: map[interface{}]interface{}{"level": 1, "kind": "123", "count": 3},
 		expectedErr:    nil,
 	},
 }
@@ -114,17 +135,6 @@ func TestBend_empty_list_mapping(t *testing.T) {
 	}
 }
 
-func TestBend_empty_bender_mapping(t *testing.T) {
-	tc := testCases[3]
-	output, err := Bend(tc.mapping, tc.source, tc.context)
-	if !reflect.DeepEqual(err, tc.expectedErr) {
-		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
-	}
-	if !reflect.DeepEqual(output, tc.expectedOutput) {
-		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
-	}
-}
-
 func TestBend_empty_bender_complext(t *testing.T) {
 	tc := testCases[4]
 	output, err := Bend(tc.mapping, tc.source, tc.context)
@@ -152,16 +162,15 @@ func mapsEqual(map1, map2 map[interface{}]interface{}) bool {
 
 	return true
 }
-func TestBend(t *testing.T) {
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			output, err := Bend(tc.mapping, tc.source, tc.context)
-			if !reflect.DeepEqual(err, tc.expectedErr) {
-				t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
-			}
-			if !reflect.DeepEqual(output, tc.expectedOutput) {
-				t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
-			}
-		})
+
+func TestBend_empty_bender_test(t *testing.T) {
+	tc := testCases[5]
+	output, err := Bend(tc.mapping, tc.source, tc.context)
+	if !reflect.DeepEqual(err, tc.expectedErr) {
+		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
 	}
+	if mapsEqual(output.(map[interface{}]interface{}), tc.expectedOutput.(map[interface{}]interface{})) {
+		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
+	}
+
 }

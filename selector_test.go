@@ -99,7 +99,7 @@ func TestF_Execute(t *testing.T) {
 
 	f := NewF(func(value interface{}, args ...interface{}) interface{} {
 		return mySortFunc(append([]interface{}{value}, args...)...)
-	}, "key", "id")
+	}, "id")
 
 	result, _ := f.Execute(data)
 	expected := []map[string]interface{}{{"id": 1}, {"id": 3}}
