@@ -20,6 +20,10 @@ type NumberExprAST struct {
 	Str string
 }
 
+type StrExprAST struct {
+	Str string
+}
+
 type BinaryExprAST struct {
 	Op string
 	Lhs,
@@ -39,6 +43,13 @@ type SelectorExprAST struct {
 func (n NumberExprAST) toStr() string {
 	return fmt.Sprintf(
 		"NumberExprAST:%s",
+		n.Str,
+	)
+}
+
+func (n StrExprAST) toStr() string {
+	return fmt.Sprintf(
+		"StrExprAST:%s",
 		n.Str,
 	)
 }
@@ -282,11 +293,16 @@ func (a *AST) parseFunCallerOrConst() ExprAST {
 			Str: strconv.FormatFloat(v, 'f', 0, 64),
 		}
 	} else {
-		a.Err = errors.New(
-			fmt.Sprintf("const `%s` is undefined\n%s",
-				name,
-				ErrPos(a.source, a.currTok.Offset)))
-		return NumberExprAST{}
+		// a.Err = errors.New(
+		// 	fmt.Sprintf("const `%s` is undefined\n%s",
+		// 		name,
+		// 		ErrPos(a.source, a.currTok.Offset)))
+		// return NumberExprAST{}
+
+		return StrExprAST{
+			Str: name,
+		}
+
 	}
 }
 

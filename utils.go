@@ -231,8 +231,8 @@ func ExprASTResultWithContext(expr ExprAST, context interface{}) (interface{}, e
 	switch expr.(type) {
 	case BinaryExprAST:
 		ast := expr.(BinaryExprAST)
-		l = ExprASTResult(ast.Lhs)
-		r = ExprASTResult(ast.Rhs)
+		l, _ = ExprASTResultWithContext(ast.Lhs, context)
+		r, _ = ExprASTResultWithContext(ast.Rhs, context)
 		switch ast.Op {
 		case "+":
 			// strconv.Atoi(l)
@@ -296,7 +296,10 @@ func ExprASTResultWithContext(expr ExprAST, context interface{}) (interface{}, e
 		// var r interface{}
 		r, err := sea.Selector.Execute(context)
 		return r, err
+	case StrExprAST:
+		return expr.(StrExprAST).Str, nil
+
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("Unsupported Expression AST %s", expr)
 }

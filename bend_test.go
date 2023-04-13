@@ -135,6 +135,18 @@ func TestBend_empty_list_mapping(t *testing.T) {
 	}
 }
 
+func TestBend_empty_bender_mapping(t *testing.T) {
+	tc := testCases[3]
+
+	output, err := Bend(tc.mapping, tc.source, tc.context)
+	if !reflect.DeepEqual(err, tc.expectedErr) {
+		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
+	}
+	if !reflect.DeepEqual(output, tc.expectedOutput) {
+		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
+	}
+}
+
 func TestBend_empty_bender_complext(t *testing.T) {
 	tc := testCases[4]
 	output, err := Bend(tc.mapping, tc.source, tc.context)
