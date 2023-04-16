@@ -37,7 +37,7 @@ type FunCallerExprAST struct {
 
 type SelectorExprAST struct {
 	Name     string
-	Selector selector
+	Selector Selector
 }
 
 func (n NumberExprAST) toStr() string {

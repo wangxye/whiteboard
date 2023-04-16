@@ -6,28 +6,33 @@ import (
 )
 
 type If struct {
-	condition func(interface{}) bool
-	whenTrue  selector
-	whenFalse selector
+	condition Selector
+	whenTrue  Selector
+	whenFalse Selector
 }
 
 func (i *If) Execute(val interface{}) (interface{}, error) {
-	if i.condition(val) {
+
+	condVal, err := i.condition.Execute(val)
+	if err != nil {
+		return nil, err
+	}
+	if condVal.(bool) {
 		return i.whenTrue.Execute(val)
 	} else {
 		return i.whenFalse.Execute(val)
 	}
 }
 
-func NewIf(condition func(interface{}) bool, whenTrue selector, whenFalse selector) *If {
+func NewIf(condition Selector, whenTrue Selector, whenFalse Selector) *If {
 	return &If{condition: condition, whenTrue: whenTrue, whenFalse: whenFalse}
 }
 
 type Alternation struct {
-	selectors []selector
+	selectors []Selector
 }
 
-func NewAlternation(s ...selector) *Alternation {
+func NewAlternation(s ...Selector) *Alternation {
 	return &Alternation{s}
 }
 
@@ -47,9 +52,9 @@ func (a *Alternation) Execute(source interface{}) (interface{}, error) {
 }
 
 type Switch struct {
-	keySelctor      selector
-	cases           map[interface{}]selector
-	defaultSelector selector
+	keySelctor      Selector
+	cases           map[interface{}]Selector
+	defaultSelector Selector
 }
 
 func (s *Switch) Execute(source map[interface{}]interface{}) (interface{}, error) {
@@ -59,7 +64,7 @@ func (s *Switch) Execute(source map[interface{}]interface{}) (interface{}, error
 		return nil, err
 	}
 
-	var benderFn selector
+	var benderFn Selector
 	var ok bool
 	if benderFn, ok = s.cases[key]; !ok {
 		if s.defaultSelector != nil {

@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-type selector interface {
+type Selector interface {
 	Execute(source interface{}) (interface{}, error)
 }
 
@@ -126,4 +126,33 @@ func (f *F) Execute(value interface{}) (interface{}, error) {
 		return f.Func(args[0]), nil
 	}
 	return f.Func(args[0], args[1:]...), nil
+}
+
+type ExpressionSelector struct {
+	left     Selector
+	right    Selector
+	operator string
+}
+
+func (e *ExpressionSelector) Execute(val interface{}) (interface{}, error) {
+	leftVal, err := e.left.Execute(val)
+	if err != nil {
+		return nil, err
+	}
+	rightVal, err := e.right.Execute(val)
+	if err != nil {
+		return nil, err
+	}
+	switch e.operator {
+	case "==":
+		return reflect.DeepEqual(leftVal, rightVal), nil
+	case "!=":
+		return !reflect.DeepEqual(leftVal, rightVal), nil
+	default:
+		return nil, fmt.Errorf("unsupported operator: %s", e.operator)
+	}
+}
+
+func NewExpressionSelector(left, right Selector, operator string) *ExpressionSelector {
+	return &ExpressionSelector{left: left, right: right, operator: operator}
 }

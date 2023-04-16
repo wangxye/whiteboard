@@ -2,40 +2,63 @@ package whiteboard
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 )
 
-func TestIf_Execute_str(t *testing.T) {
-	// test case 1
-	condition1 := func(val interface{}) bool {
-		return val.(map[string]interface{})["country"].(string) == "China"
+func TestIf_Execute(t *testing.T) {
+	val1 := map[string]interface{}{
+		"country":    "China",
+		"first_name": "Li",
+		"last_name":  "Na",
 	}
-	whenTrue1, _ := NewS("first_name")
-	whenFalse1, _ := NewS("last_name")
-	if_1 := NewIf(condition1, whenTrue1, whenFalse1)
-	val1 := map[string]interface{}{"country": "China", "first_name": "Li", "last_name": "Na"}
-	res1, _ := if_1.Execute(val1)
-	if res1 != "Li" {
-		t.Errorf("Test case 1 failed: expected %v but got %v", "Li", res1)
+	val2 := map[string]interface{}{
+		"country":    "Brazil",
+		"first_name": "Gustavo",
+		"last_name":  "Kuerten",
 	}
 
-}
+	testCases := []struct {
+		name    string
+		ifCond  Selector
+		ifTrue  Selector
+		ifFalse Selector
+		input   interface{}
+		want    interface{}
+		wantErr bool
+	}{
+		{
+			name:    "test condition true",
+			ifCond:  NewExpressionSelector(&S{[]interface{}{"country"}}, &K{"China"}, "=="),
+			ifTrue:  &S{[]interface{}{"first_name"}},
+			ifFalse: &S{[]interface{}{"last_name"}},
+			input:   val1,
+			want:    "Li",
+			wantErr: false,
+		},
+		{
+			name:    "test condition false",
+			ifCond:  NewExpressionSelector(&S{[]interface{}{"country"}}, &K{"China"}, "=="),
+			ifTrue:  &S{[]interface{}{"first_name"}},
+			ifFalse: &S{[]interface{}{"last_name"}},
+			input:   val2,
+			want:    "Kuerten",
+			wantErr: false,
+		},
+	}
 
-func TestIf_Execute_int(t *testing.T) {
-	// test case 2
-	condition2 := func(val interface{}) bool {
-		return val.(map[string]interface{})["age"].(int) < 18
-	}
-	whenTrue2, _ := NewK("You are not allowed to vote yet.")
-	whenFalse2, _ := NewK("You can vote now.")
-	if_2 := NewIf(condition2, whenTrue2, whenFalse2)
-	val2 := map[string]interface{}{"name": "Alice", "age": 21}
-	res2, err := if_2.Execute(val2)
-	if err != nil {
-		t.Errorf("Unexpected error returned: %v", err)
-	}
-	if res2 != "You can vote now." {
-		t.Errorf("Test case 2 failed: expected %v but got %v", "You can vote now.", res2)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ifStmt := NewIf(tc.ifCond, tc.ifTrue, tc.ifFalse)
+			got, err := ifStmt.Execute(tc.input)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("ifStmt.Execute() error = %v, wantErr %v", err, tc.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("ifStmt.Execute() got = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }
 
