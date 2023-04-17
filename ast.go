@@ -3,6 +3,7 @@ package whiteboard
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -154,52 +155,99 @@ func (a *AST) parseNumber() NumberExprAST {
 	return n
 }
 
-func (a *AST) parseSelector() SelectorExprAST {
-	fmt.Printf("parseSelector-->\n")
+func (a *AST) parseFunction() SelectorExprAST {
 	name := a.currTok.Tok
-	selectorType := strings.ToUpper(string(name[0]))
+	fmt.Printf("parseFunction-->%v\n", name)
 
-	selectorParam := name[1:]
-	startIndex := strings.Index(selectorParam, "(")
-	endIndex := strings.LastIndex(selectorParam, ")")
+	selectorCtrlType := strings.ToUpper(name)
 
-	if startIndex != -1 && endIndex != -1 {
-		selectorParam = selectorParam[0:startIndex] + selectorParam[startIndex+1:endIndex] + selectorParam[endIndex+1:]
-		// fmt.Println(selectorParam)
-	} else {
-		a.Err = errors.New(
-			fmt.Sprintf("Selector `%s` Not in a standardized format\n%s, maybe forget '(', ')'",
-				selectorType,
-				ErrPos(a.source, a.currTok.Offset)))
+	s := SelectorExprAST{}
+	a.getNextToken()
+	// call custom function
+	if a.currTok.Tok == "(" {
+
+		a.getNextToken()
+		exprs := make([]Selector, 0)
+		if a.currTok.Tok == ")" {
+			// function call without parameters
+			// ignore the process of parameter resolution
+		} else {
+			exprs = append(exprs, a.ParseExpression().(SelectorExprAST).Selector)
+			for a.currTok.Tok != ")" && a.getNextToken() != nil {
+				if a.currTok.Type == COMMA {
+					continue
+				}
+				exprs = append(exprs, a.ParseExpression().(SelectorExprAST).Selector)
+			}
+		}
+
+		s.Name = selectorCtrlType
+		switch selectorCtrlType {
+		case "IF":
+			s.Selector = NewIf(exprs[0], exprs[1], exprs[2])
+		case "AL":
+			s.Selector = NewAlternation(exprs...)
+		}
 	}
+	a.getNextToken()
+	return s
+}
 
-	parts := strings.Split(selectorParam, ",")
+func (a *AST) parseSelector() SelectorExprAST {
+
+	name := a.currTok.Tok
+	fmt.Printf("parseSelector-->%v\n", name)
+
+	selectorType := name
+	a.getNextToken()
+	// call custom function
+	exprs := make([]ExprAST, 0)
+	if a.currTok.Tok == "(" {
+
+		a.getNextToken()
+
+		if a.currTok.Tok == ")" {
+			// function call without parameters
+			// ignore the process of parameter resolution
+		} else {
+			exprs = append(exprs, a.ParseExpression())
+			for a.currTok.Tok != ")" && a.getNextToken() != nil {
+				if a.currTok.Type == COMMA {
+					continue
+				}
+				exprs = append(exprs, a.ParseExpression())
+			}
+		}
+	}
+	fmt.Printf("parms-->%v\n", exprs)
 
 	var ifaceSlice []interface{}
 	var err error
-	for _, part := range parts {
-		fmt.Printf("%v\n", part)
-		part = strings.TrimSpace(part)
-		if strings.Contains(part, "'") || strings.Contains(part, "\"") {
-			part = strings.ReplaceAll(part, "'", "")
-			part = strings.ReplaceAll(part, "\"", "")
-			ifaceSlice = append(ifaceSlice, part)
-		} else if strings.Contains(part, ".") {
-			pf, _ := strconv.ParseFloat(part, 64)
-			ifaceSlice = append(ifaceSlice, pf)
-		} else {
-			// base := strings.Contains(part, "0b")?2:strings.Contains(part,"0x")
-			//TODO: check if part is 0x,0b, or otherwise
-			pf, _ := strconv.ParseInt(part, 10, 64)
-			ifaceSlice = append(ifaceSlice, pf)
-		}
 
+	for _, part := range exprs {
+		fmt.Printf("%v-->%v-->%v\n", part, reflect.TypeOf(part).Kind(), reflect.TypeOf(part).Name())
+		switch part.(type) {
+		case StrExprAST:
+			ifaceSlice = append(ifaceSlice, part.(StrExprAST).Str)
+		case NumberExprAST:
+			ps := part.(NumberExprAST).Str
+			if strings.Contains(ps, ".") {
+				pf, _ := strconv.ParseFloat(ps, 64)
+				ifaceSlice = append(ifaceSlice, pf)
+			} else {
+				pf, _ := strconv.ParseInt(ps, 10, 64)
+				ifaceSlice = append(ifaceSlice, pf)
+			}
+		case SelectorExprAST:
+			ifaceSlice = append(ifaceSlice, part.(SelectorExprAST).Selector)
+		}
 	}
+
 	fmt.Printf("%s", ifaceSlice)
 	s := SelectorExprAST{}
 	switch selectorType {
 	case "K":
-		if len(parts) == 1 {
+		if len(ifaceSlice) == 1 {
 			s.Name = selectorType
 			s.Selector, _ = NewK(ifaceSlice[0])
 		} else {
@@ -228,7 +276,7 @@ func (a *AST) parseSelector() SelectorExprAST {
 		// program, err := expr.Compile(parts[0], expr.Env(Env{}))
 
 		i := interp.New(interp.Options{})
-		v, err := i.Eval(parts[0])
+		v, err := i.Eval(ifaceSlice[0].(string))
 		if err != nil {
 			a.Err = errors.New(
 				fmt.Sprintf("Selector `%s` %s \n%s",
@@ -238,7 +286,11 @@ func (a *AST) parseSelector() SelectorExprAST {
 		}
 		fn := v.Interface().(func(interface{}, ...interface{}) interface{})
 		s.Selector = NewF(fn, ifaceSlice[1:]...)
+	case "ExpS":
+		s.Name = selectorType
+		s.Selector = NewExpressionSelector(ifaceSlice[0].(Selector), ifaceSlice[1].(Selector), ifaceSlice[2].(string))
 	}
+
 	fmt.Printf("parseSelector-->%v\n", s)
 
 	a.getNextToken()
@@ -360,6 +412,9 @@ func (a *AST) parsePrimary() ExprAST {
 		return nil
 	case SELECTOR:
 		return a.parseSelector()
+
+	case FUCTION:
+		return a.parseFunction()
 	default:
 		return nil
 	}

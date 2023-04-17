@@ -16,6 +16,8 @@ const (
 	COMMA
 	// selector
 	SELECTOR
+	// Function
+	FUCTION
 )
 
 type Token struct {
@@ -59,6 +61,7 @@ func (p *Parser) parse() []*Token {
 		}
 		toks = append(toks, tok)
 	}
+
 	return toks
 }
 
@@ -119,50 +122,68 @@ func (p *Parser) nextTok() *Token {
 		tok.Offset = start
 		err = p.nextCh()
 	case '"':
-		p.nextCh()
-		for p.ch != '"' && p.nextCh() == nil {
-		}
-		if p.ch == '"' {
-			tok = &Token{
-				Tok:  p.Source[start+1 : p.offset],
-				Type: Identifier,
-			}
-			tok.Offset = start + 1
-			p.nextCh()
-		}
+		tok = p.parseConstStr(tok, start)
 	default:
-		if p.isSelectorWord(p.ch) {
-			for p.ch != ')' && p.nextCh() == nil {
-
-			}
-			if p.ch == ')' {
-				p.nextCh()
-				tok = &Token{
-					Tok:  p.Source[start:p.offset],
-					Type: SELECTOR,
-				}
-				tok.Offset = start
-				break
-			}
-		}
-		// else {
-		for p.isWordChar(p.ch) && p.nextCh() == nil {
-		}
-		tok = &Token{
-			Tok:  p.Source[start:p.offset],
-			Type: Identifier,
-		}
-		tok.Offset = start
-
-		if p.ch != ' ' {
-			s := fmt.Sprintf("symbol error: unknown '%v', pos [%v:]\n%s",
-				string(p.ch),
-				start,
-				ErrPos(p.Source, start))
-			p.err = errors.New(s)
-		}
+		tok = p.parseCustomFuc(tok, start)
 	}
 	fmt.Printf("%v-->%d\n", tok, tok.Type)
+	return tok
+}
+
+func (p *Parser) parseCustomFuc(tok *Token, start int) *Token {
+
+	fmt.Println("parseCustomFuc")
+	if p.isSelectorWord() {
+		for p.ch != '(' && p.nextCh() == nil {
+
+		}
+		if p.ch == '(' {
+			tok = &Token{
+				Tok:  p.Source[start:p.offset],
+				Type: SELECTOR,
+			}
+			tok.Offset = start
+		}
+		return tok
+	} else if p.isControlFlowWord() {
+		for p.ch != '(' && p.nextCh() == nil {
+
+		}
+		if p.ch == '(' {
+			tok = &Token{
+				Tok:  p.Source[start:p.offset],
+				Type: FUCTION,
+			}
+			tok.Offset = start
+		}
+		return tok
+	}
+
+	for p.isWordChar(p.ch) && p.nextCh() == nil {
+	}
+	tok = &Token{
+		Tok:  p.Source[start:p.offset],
+		Type: Identifier,
+	}
+	tok.Offset = start
+
+	return tok
+}
+
+func (p *Parser) parseConstStr(tok *Token, start int) *Token {
+	p.nextCh()
+	for p.ch != '"' && p.nextCh() == nil {
+	}
+
+	if p.ch == '"' {
+		tok = &Token{
+			Tok:  p.Source[start+1 : p.offset],
+			Type: Identifier,
+		}
+		tok.Offset = start + 1
+		p.nextCh()
+	}
+
 	return tok
 }
 
@@ -196,11 +217,33 @@ func (p *Parser) isWordChar(c byte) bool {
 	return p.isChar(c) || '0' <= c && c <= '9'
 }
 
-var selectorWord string = "kKsSfF"
+var selectorWord string = "kKsSfFExpS"
 
-func (p *Parser) isSelectorWord(c byte) bool {
-	fmt.Printf("%d %d %d", strings.IndexByte(selectorWord, c), strings.Index(p.Source[p.offset:], "("), strings.Index(p.Source[p.offset:], ")"))
-	return strings.IndexByte(selectorWord, c) != -1 &&
+func (p *Parser) isSelectorWord() bool {
+	// fmt.Printf("isSelectorWord: %d %d %d\n", strings.IndexByte(selectorWord, p.ch), strings.Index(p.Source[p.offset:], "("), strings.Index(p.Source[p.offset:], ")"))
+
+	return (strings.IndexByte(selectorWord, p.ch) != -1 ||
+		(p.offset+4 <= len(p.Source) && strings.Contains(selectorWord, p.Source[p.offset:p.offset+4]))) &&
 		strings.Index(p.Source[p.offset:], "(") >= 1 &&
 		strings.Index(p.Source[p.offset:], ")") >= 2
+}
+
+var controlFlowWord string = "IFifAltaltSwtswt"
+
+var defConstFuc = map[string]bool{
+	"IF": true,
+	"if": true,
+	"SW": true,
+	"sw": true,
+	"AL": true,
+	"al": true,
+}
+
+// p.offset+2 <= len(p.Source) &&
+func (p *Parser) isControlFlowWord() bool {
+	// fmt.Printf("isControlFlowWord: %c %d %d\n", p.ch, strings.Index(p.Source[p.offset:], "("), strings.LastIndex(p.Source[p.offset:], ")"))
+
+	return defConstFuc[p.Source[p.offset:p.offset+2]] &&
+		strings.Index(p.Source[p.offset:], "(") < strings.LastIndex(p.Source[p.offset:], ")")
+
 }

@@ -1,9 +1,14 @@
 package whiteboard
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
+
+	"github.com/ghodss/yaml"
 )
 
 var testCases = []struct {
@@ -98,6 +103,48 @@ var testCases = []struct {
 		expectedOutput: map[interface{}]interface{}{"level": 1, "kind": "123", "count": 3},
 		expectedErr:    nil,
 	},
+
+	{
+		name: "test case 7: example with control flow: IF",
+		mapping: map[string]interface{}{
+			"name": "IF( ExpS( S(\"country\"), K(\"China\"), \"==\" ), S(\"first_name\"), S(\"last_name\"))",
+		},
+		source: map[string]interface{}{
+			"country":    "China",
+			"first_name": "Li",
+			"last_name":  "Na",
+		},
+		context:        nil,
+		expectedOutput: map[interface{}]interface{}{"name": "Li"},
+		expectedErr:    nil,
+	},
+
+	{
+		name: "test case 8: example with control flow:Alternation",
+		mapping: map[string]interface{}{
+			"name": "AL( S(1), S(0), S(\"key1\"))",
+		},
+		source:         []interface{}{"a", "b"},
+		context:        nil,
+		expectedOutput: map[interface{}]interface{}{"name": "b"},
+		expectedErr:    nil,
+	},
+}
+
+var ActionMaps = map[interface{}]map[interface{}]interface{}{
+	"init": {
+		"userId": "123",
+	},
+	"a": {
+		"userAgent": "agent",
+		"userName":  "name",
+	},
+	"b": {
+		"userLevel": "level",
+	},
+	"c": {
+		"userKind": "kind",
+	},
 }
 
 func TestBend_empty_mapping(t *testing.T) {
@@ -182,6 +229,112 @@ func TestBend_empty_bender_test(t *testing.T) {
 		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
 	}
 	if mapsEqual(output.(map[interface{}]interface{}), tc.expectedOutput.(map[interface{}]interface{})) {
+		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
+	}
+
+}
+
+func TestBend_testing(t *testing.T) {
+	//读取YAML内容
+	jsonBytes := readYAML()
+
+	var data map[string]interface{}
+	json.Unmarshal([]byte(jsonBytes), &data)
+
+	fmt.Println("-----")
+	stars, ok := data["spec"].(map[string]interface{})["stars"].([]interface{})
+	if !ok {
+		fmt.Println("Failed to get stars")
+		return
+	}
+
+	for _, star := range stars {
+		starMap, ok := star.(map[string]interface{})
+		if !ok {
+			fmt.Println("Failed to get star map")
+			continue
+		}
+		fmt.Println(starMap["name"], starMap["image"], starMap["port"], starMap["action"], starMap["dependencies"], starMap["param"])
+
+		parms, err := yaml.YAMLToJSON([]byte(starMap["param"].(string)))
+
+		if err != nil {
+			panic(err)
+		}
+
+		var mapping map[string]interface{}
+		json.Unmarshal([]byte(parms), &mapping)
+
+		fmt.Println(mapping)
+		output, err := Bend(mapping, ActionMaps, nil)
+
+		fmt.Printf("%v-->%v\n", starMap["name"], output)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("-----")
+	}
+
+	// tc := testCases[5]
+	// output, err := Bend(tc.mapping, tc.source, tc.context)
+	// if !reflect.DeepEqual(err, tc.expectedErr) {
+	// 	t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
+	// }
+	// if mapsEqual(output.(map[interface{}]interface{}), tc.expectedOutput.(map[interface{}]interface{})) {
+	// 	t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
+	// }
+
+}
+
+func readYAML() []byte {
+	yamlFile, err := os.Open("samples/astro_new.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer yamlFile.Close()
+
+	yamlBytes, err := ioutil.ReadAll(yamlFile)
+	if err != nil {
+		panic(err)
+	}
+
+	jsonBytes, err := yaml.YAMLToJSON(yamlBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(jsonBytes))
+	return jsonBytes
+}
+
+func TestBend_with_IF(t *testing.T) {
+	tc := testCases[6]
+	fmt.Printf("%v-->%v-->%v\n", tc.name, tc.mapping, tc.source)
+
+	output, err := Bend(tc.mapping, tc.source, tc.context)
+
+	fmt.Println(output)
+	if !reflect.DeepEqual(err, tc.expectedErr) {
+		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
+	}
+	if !reflect.DeepEqual(output, tc.expectedOutput) {
+		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
+	}
+
+}
+
+func TestBend_with_Al(t *testing.T) {
+	tc := testCases[7]
+	fmt.Printf("%v-->%v-->%v\n", tc.name, tc.mapping, tc.source)
+
+	output, err := Bend(tc.mapping, tc.source, tc.context)
+
+	fmt.Println(output)
+	if !reflect.DeepEqual(err, tc.expectedErr) {
+		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
+	}
+	if !reflect.DeepEqual(output, tc.expectedOutput) {
 		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
 	}
 

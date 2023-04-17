@@ -1,6 +1,9 @@
 package whiteboard
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 type Transport struct {
 	value   interface{}
@@ -41,6 +44,9 @@ func Bend(mapping interface{}, source interface{}, args ...interface{}) (interfa
 }
 
 func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
+	t := reflect.TypeOf(mapping)
+	// fmt.Println(t)
+	fmt.Printf("%v-->%v\n", t, mapping)
 	switch m := mapping.(type) {
 	case []interface{}:
 		result := make([]interface{}, len(m))
@@ -52,7 +58,7 @@ func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
 			result[i] = val
 		}
 		return result, nil
-	case map[interface{}]interface{}:
+	case map[string]interface{}:
 		result := make(map[interface{}]interface{})
 		for k, v := range m {
 			val, err := _bend(v, transport)
@@ -63,9 +69,11 @@ func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
 			}
 			result[k] = val
 		}
+		fmt.Printf("_bend: %v\n", result)
 		return result, nil
 	case string:
 		val, err := bendExpression(m, transport)
+		fmt.Printf("_bend string: %v\n", val)
 		return val, err
 
 	default:
