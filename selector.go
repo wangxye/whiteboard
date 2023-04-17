@@ -46,14 +46,14 @@ func (s *S) Execute(source interface{}) (interface{}, error) {
 		}
 		v = field
 	}
-	fmt.Printf("S.Execute:%v\n", v.Interface())
+
 	return v.Interface(), nil
 }
 
 func (s *S) findFieldByKind(v reflect.Value, key interface{}) (reflect.Value, error) {
 
 	k := reflect.ValueOf(key)
-	fmt.Printf("%v -- > %v\n", key, v)
+	// fmt.Printf("%v -- > %v\n", key, v)
 	if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		if v.IsNil() {
 			return reflect.Value{}, fmt.Errorf("nil encountered in path")
@@ -102,7 +102,7 @@ func (s *S) findFieldByKind(v reflect.Value, key interface{}) (reflect.Value, er
 		return reflect.Value{}, fmt.Errorf("cannot access path element %s of non-composite type %s", key, v.Kind())
 	}
 
-	fmt.Printf("findFieldByKind-->%v\n", v)
+	// fmt.Printf("findFieldByKind-->%v\n", v)
 	return v, nil
 }
 

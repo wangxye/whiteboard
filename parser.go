@@ -2,7 +2,6 @@ package whiteboard
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -14,8 +13,6 @@ const (
 	Operator
 	// ,
 	COMMA
-	// selector
-	SELECTOR
 	// Function
 	FUCTION
 )
@@ -126,35 +123,22 @@ func (p *Parser) nextTok() *Token {
 	default:
 		tok = p.parseCustomFuc(tok, start)
 	}
-	fmt.Printf("%v-->%d\n", tok, tok.Type)
+	// fmt.Printf("%v-->%d\n", tok, tok.Type)
 	return tok
 }
 
 func (p *Parser) parseCustomFuc(tok *Token, start int) *Token {
-
-	fmt.Println("parseCustomFuc")
-	if p.isSelectorWord() {
+	// fmt.Println("parseCustomFuc")
+	if p.isSelectorWord() || p.isControlFlowWord() {
 		for p.ch != '(' && p.nextCh() == nil {
 
 		}
 		if p.ch == '(' {
 			tok = &Token{
-				Tok:  p.Source[start:p.offset],
-				Type: SELECTOR,
+				Tok:    p.Source[start:p.offset],
+				Type:   FUCTION,
+				Offset: start,
 			}
-			tok.Offset = start
-		}
-		return tok
-	} else if p.isControlFlowWord() {
-		for p.ch != '(' && p.nextCh() == nil {
-
-		}
-		if p.ch == '(' {
-			tok = &Token{
-				Tok:  p.Source[start:p.offset],
-				Type: FUCTION,
-			}
-			tok.Offset = start
 		}
 		return tok
 	}
@@ -239,11 +223,10 @@ var defConstFuc = map[string]bool{
 	"al": true,
 }
 
-// p.offset+2 <= len(p.Source) &&
 func (p *Parser) isControlFlowWord() bool {
 	// fmt.Printf("isControlFlowWord: %c %d %d\n", p.ch, strings.Index(p.Source[p.offset:], "("), strings.LastIndex(p.Source[p.offset:], ")"))
 
-	return defConstFuc[p.Source[p.offset:p.offset+2]] &&
+	return p.offset+2 <= len(p.Source) && defConstFuc[p.Source[p.offset:p.offset+2]] &&
 		strings.Index(p.Source[p.offset:], "(") < strings.LastIndex(p.Source[p.offset:], ")")
 
 }

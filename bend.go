@@ -2,7 +2,8 @@ package whiteboard
 
 import (
 	"fmt"
-	"reflect"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Transport struct {
@@ -26,6 +27,10 @@ func (t *Transport) FromSource(src interface{}) *Transport {
 	}
 }
 
+var (
+	logger *logrus.Entry
+)
+
 type BendingException struct {
 	Message string
 }
@@ -36,6 +41,7 @@ func (e *BendingException) Error() string {
 
 func Bend(mapping interface{}, source interface{}, args ...interface{}) (interface{}, error) {
 	context := make(map[interface{}]interface{})
+	// logger.Info("Bending source with mapping", source, mapping)
 	if len(args) > 0 {
 		context, _ = args[0].(map[interface{}]interface{})
 	}
@@ -44,9 +50,6 @@ func Bend(mapping interface{}, source interface{}, args ...interface{}) (interfa
 }
 
 func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
-	t := reflect.TypeOf(mapping)
-	// fmt.Println(t)
-	fmt.Printf("%v-->%v\n", t, mapping)
 	switch m := mapping.(type) {
 	case []interface{}:
 		result := make([]interface{}, len(m))
@@ -69,11 +72,9 @@ func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
 			}
 			result[k] = val
 		}
-		fmt.Printf("_bend: %v\n", result)
 		return result, nil
 	case string:
 		val, err := bendExpression(m, transport)
-		fmt.Printf("_bend string: %v\n", val)
 		return val, err
 
 	default:

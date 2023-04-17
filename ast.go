@@ -129,7 +129,7 @@ func (a *AST) getNextToken() *Token {
 
 // Get the operation priority
 func (a *AST) getTokPrecedence() int {
-	fmt.Printf("getTokPrecedence-->%v\n", a.currTok.Tok)
+	// fmt.Printf("getTokPrecedence-->%v\n", a.currTok.Tok)
 	if p, ok := precedence[a.currTok.Tok]; ok {
 		return p
 	}
@@ -156,47 +156,9 @@ func (a *AST) parseNumber() NumberExprAST {
 }
 
 func (a *AST) parseFunction() SelectorExprAST {
-	name := a.currTok.Tok
-	fmt.Printf("parseFunction-->%v\n", name)
-
-	selectorCtrlType := strings.ToUpper(name)
-
-	s := SelectorExprAST{}
-	a.getNextToken()
-	// call custom function
-	if a.currTok.Tok == "(" {
-
-		a.getNextToken()
-		exprs := make([]Selector, 0)
-		if a.currTok.Tok == ")" {
-			// function call without parameters
-			// ignore the process of parameter resolution
-		} else {
-			exprs = append(exprs, a.ParseExpression().(SelectorExprAST).Selector)
-			for a.currTok.Tok != ")" && a.getNextToken() != nil {
-				if a.currTok.Type == COMMA {
-					continue
-				}
-				exprs = append(exprs, a.ParseExpression().(SelectorExprAST).Selector)
-			}
-		}
-
-		s.Name = selectorCtrlType
-		switch selectorCtrlType {
-		case "IF":
-			s.Selector = NewIf(exprs[0], exprs[1], exprs[2])
-		case "AL":
-			s.Selector = NewAlternation(exprs...)
-		}
-	}
-	a.getNextToken()
-	return s
-}
-
-func (a *AST) parseSelector() SelectorExprAST {
 
 	name := a.currTok.Tok
-	fmt.Printf("parseSelector-->%v\n", name)
+	// fmt.Printf("parseFunction-->%v\n", name)
 
 	selectorType := name
 	a.getNextToken()
@@ -219,7 +181,7 @@ func (a *AST) parseSelector() SelectorExprAST {
 			}
 		}
 	}
-	fmt.Printf("parms-->%v\n", exprs)
+	// fmt.Printf("parms-->%v\n", exprs)
 
 	var ifaceSlice []interface{}
 	var err error
@@ -243,7 +205,7 @@ func (a *AST) parseSelector() SelectorExprAST {
 		}
 	}
 
-	fmt.Printf("%s", ifaceSlice)
+	// fmt.Printf("%s", ifaceSlice)
 	s := SelectorExprAST{}
 	switch selectorType {
 	case "K":
@@ -258,7 +220,6 @@ func (a *AST) parseSelector() SelectorExprAST {
 		}
 
 	case "S":
-
 		s.Name = selectorType
 		s.Selector, err = NewS(ifaceSlice[0:]...)
 		if err != nil {
@@ -289,9 +250,22 @@ func (a *AST) parseSelector() SelectorExprAST {
 	case "ExpS":
 		s.Name = selectorType
 		s.Selector = NewExpressionSelector(ifaceSlice[0].(Selector), ifaceSlice[1].(Selector), ifaceSlice[2].(string))
+
+	case "IF":
+		s.Name = selectorType
+		s.Selector = NewIf(ifaceSlice[0].(Selector), ifaceSlice[1].(Selector), ifaceSlice[2].(Selector))
+	case "AL":
+		s.Name = selectorType
+		var selectors []Selector
+		for _, s := range ifaceSlice {
+			if sel, ok := s.(Selector); ok {
+				selectors = append(selectors, sel)
+			}
+		}
+		s.Selector = NewAlternation(selectors...)
 	}
 
-	fmt.Printf("parseSelector-->%v\n", s)
+	// fmt.Printf("parseSelector-->%v\n", s)
 
 	a.getNextToken()
 	return s
@@ -410,9 +384,6 @@ func (a *AST) parsePrimary() ExprAST {
 				a.currTok.Tok,
 				ErrPos(a.source, a.currTok.Offset)))
 		return nil
-	case SELECTOR:
-		return a.parseSelector()
-
 	case FUCTION:
 		return a.parseFunction()
 	default:

@@ -2,7 +2,6 @@ package whiteboard
 
 import (
 	"errors"
-	"fmt"
 )
 
 type If struct {
@@ -41,7 +40,7 @@ func (a *Alternation) Execute(source interface{}) (interface{}, error) {
 	for _, selector := range a.selectors {
 		result, err := selector.Execute(source)
 		// && !errors.Is(err, NotFoundError)
-		fmt.Printf("%v -> %v -> %v \n", source, result, err)
+		// fmt.Printf("%v -> %v -> %v \n", source, result, err)
 		if err != nil {
 			exc = err
 		} else {

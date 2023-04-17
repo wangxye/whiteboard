@@ -36,19 +36,19 @@ func IsValidMatch(v reflect.Value, key reflect.Value) bool {
 	if v.Kind() == reflect.Array || v.Kind() == reflect.Slice {
 
 		if key.Kind() != reflect.Int && key.Kind() != reflect.Int64 && key.Kind() != reflect.Int32 {
-			fmt.Printf("%v -> %v return %t \n", v.Kind(), key.Kind(), key.Kind() == reflect.Int64)
+			// fmt.Printf("%v -> %v return %t \n", v.Kind(), key.Kind(), key.Kind() == reflect.Int64)
 			return false
 		}
 
 		keyInt := int(key.Int())
 
 		if key.IsValid() && keyInt >= 0 && keyInt < v.Len() {
-			fmt.Printf("%v -> %v return %t  %v\n", v.Kind(), key.Kind(), key.Type().Kind() == reflect.Int, keyInt)
+			// fmt.Printf("%v -> %v return %t  %v\n", v.Kind(), key.Kind(), key.Type().Kind() == reflect.Int, keyInt)
 			return true
 		}
 
 	}
-	fmt.Printf("%v/ %v -> %v /%v \n", key.Type(), key, v.Type(), v)
+	// fmt.Printf("%v/ %v -> %v /%v \n", key.Type(), key, v.Type(), v)
 	return false
 }
 
@@ -226,7 +226,7 @@ func ExprASTResultWithContext(expr ExprAST, context interface{}) (interface{}, e
 	var l, r interface{}
 	// var err error
 	//TODO: handle error and return a uniform result type
-	fmt.Printf("ExprASTResult-->%v\n", expr)
+	// fmt.Printf("ExprASTResult-->%v\n", expr)
 
 	switch expr.(type) {
 	case BinaryExprAST:
