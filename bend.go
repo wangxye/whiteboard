@@ -2,6 +2,7 @@ package whiteboard
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/sirupsen/logrus"
 )
@@ -50,10 +51,16 @@ func Bend(mapping interface{}, source interface{}, args ...interface{}) (interfa
 }
 
 func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
-	switch m := mapping.(type) {
-	case []interface{}:
-		result := make([]interface{}, len(m))
-		for i, item := range m {
+
+	t := reflect.TypeOf(mapping)
+	fmt.Println(t.Kind())
+	mValue := reflect.ValueOf(mapping)
+
+	switch t.Kind() {
+	case reflect.Array, reflect.Slice:
+		result := make([]interface{}, mValue.Len())
+		for i := 0; i < mValue.Len(); i++ {
+			item := mValue.Index(i)
 			val, err := _bend(item, transport)
 			if err != nil {
 				return nil, err
@@ -61,20 +68,22 @@ func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
 			result[i] = val
 		}
 		return result, nil
-	case map[string]interface{}:
-		result := make(map[interface{}]interface{})
-		for k, v := range m {
-			val, err := _bend(v, transport)
+	case reflect.Map:
+		result := make(map[string]interface{})
+		keys := mValue.MapKeys()
+		for _, key := range keys {
+
+			val, err := _bend(mValue.MapIndex(key).Interface(), transport)
 			if err != nil {
 				return nil, &BendingException{
-					Message: fmt.Sprintf("Error for key %v: %v", k, err.Error()),
+					Message: fmt.Sprintf("Error for key %v: %v", key, err.Error()),
 				}
 			}
-			result[k] = val
+			result[key.Interface().(string)] = val
 		}
 		return result, nil
-	case string:
-		val, err := bendExpression(m, transport)
+	case reflect.String:
+		val, err := bendExpression(mValue.Interface(), transport)
 		return val, err
 
 	default:
