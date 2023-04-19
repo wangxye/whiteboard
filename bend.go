@@ -1,6 +1,7 @@
 package whiteboard
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -41,6 +42,11 @@ func (e *BendingException) Error() string {
 }
 
 func Bend(mapping interface{}, source interface{}, args ...interface{}) (interface{}, error) {
+	// check whether mapping and source are empty
+	if mapping == nil || source == nil {
+		return nil, errors.New("mapping or source is empty")
+	}
+
 	context := make(map[interface{}]interface{})
 	// logger.Info("Bending source with mapping", source, mapping)
 	if len(args) > 0 {
@@ -69,7 +75,9 @@ func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
 		}
 		return result, nil
 	case reflect.Map:
-		result := make(map[string]interface{})
+		// result := make(map[string]interface{})
+		result := reflect.New(t).Elem()
+		result.Set(reflect.MakeMap(t))
 		keys := mValue.MapKeys()
 		for _, key := range keys {
 
@@ -79,9 +87,11 @@ func _bend(mapping interface{}, transport *Transport) (interface{}, error) {
 					Message: fmt.Sprintf("Error for key %v: %v", key, err.Error()),
 				}
 			}
-			result[key.Interface().(string)] = val
+			// result[key.Interface().(string)] = val
+			valValue := reflect.ValueOf(val)
+			result.SetMapIndex(key, valValue)
 		}
-		return result, nil
+		return result.Interface(), nil
 	case reflect.String:
 		val, err := bendExpression(mValue.Interface(), transport)
 		return val, err

@@ -2,10 +2,12 @@ package whiteboard
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/ghodss/yaml"
@@ -25,7 +27,7 @@ var testCases = []struct {
 		source:         nil,
 		context:        nil,
 		expectedOutput: nil,
-		expectedErr:    nil,
+		expectedErr:    errors.New("mapping or source is empty"),
 	},
 	{
 		name:           "test case 2: scalar value source",
@@ -79,7 +81,7 @@ var testCases = []struct {
 			},
 		},
 		context:        nil,
-		expectedOutput: map[string]interface{}{"id": 123, "name": "Bob", "pets": []interface{}{map[interface{}]interface{}{"age": 2, "name": "cat"}, map[interface{}]interface{}{"age": 3, "name": "dog"}}, "rank": 42},
+		expectedOutput: map[interface{}]interface{}{"id": 123, "name": "Bob", "pets": []interface{}{map[interface{}]interface{}{"age": 2, "name": "cat"}, map[interface{}]interface{}{"age": 3, "name": "dog"}}, "rank": 42},
 		expectedErr:    nil,
 	},
 	{
@@ -100,7 +102,7 @@ var testCases = []struct {
 			},
 		},
 		context:        nil,
-		expectedOutput: map[string]interface{}{"level": 1, "kind": "123", "count": 3},
+		expectedOutput: map[interface{}]interface{}{"level": 1, "kind": "VIP", "count": 3},
 		expectedErr:    nil,
 	},
 
@@ -202,40 +204,63 @@ func TestBend_empty_bender_complext(t *testing.T) {
 	if !reflect.DeepEqual(err, tc.expectedErr) {
 		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
 	}
-	// if mapsEqual(output.(map[interface{}]interface{}), tc.expectedOutput.(map[interface{}]interface{})) {
-	// 	t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
-	// }
-	if mapsEqual(output.(map[string]interface{}), tc.expectedOutput.(map[string]interface{})) {
+	expect := tc.expectedOutput
+
+	if !CompareMaps(output, expect) {
 		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
 	}
-	// if !reflect.DeepEqual(output, tc.expectedOutput) {
-	// 	t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
-	// }
 }
-func mapsEqual(map1, map2 map[string]interface{}) bool {
-	// 检查 map 的长度是否相等
-	if len(map1) != len(map2) {
+
+func CompareMaps(mapA interface{}, mapB interface{}) bool {
+	// 判断类型是否为map
+	if reflect.TypeOf(mapA).Kind() != reflect.Map || reflect.TypeOf(mapB).Kind() != reflect.Map {
 		return false
 	}
 
-	// 遍历第一个 map，检查其键值对是否在第二个 map 中都存在，并且对应的值相等
-	for k, v1 := range map1 {
-		v2, ok := map2[k]
-		if !ok || !reflect.DeepEqual(v1, v2) {
+	valueA := reflect.ValueOf(mapA)
+	valueB := reflect.ValueOf(mapB)
+
+	// 获取两个map的键名集合并排序
+	keysA := valueA.MapKeys()
+	keysB := valueB.MapKeys()
+	sort.Slice(keysA, func(i, j int) bool {
+		return keysA[i].String() < keysA[j].String()
+	})
+	sort.Slice(keysB, func(i, j int) bool {
+		return keysB[i].String() < keysB[j].String()
+	})
+
+	// 如果两个map的键名数量不同，则直接返回false
+	if len(keysA) != len(keysB) {
+		return false
+	}
+
+	// 遍历第一个map，检查其键和值是否都存在于第二个map中
+	for i, key := range keysA {
+		valueA := valueA.MapIndex(key)
+		valueB := valueB.MapIndex(keysB[i])
+
+		if !valueB.IsValid() || !reflect.DeepEqual(valueA.Interface(), valueB.Interface()) {
+			fmt.Printf("%v-->%v / %v\n", key, valueA.Interface(), valueB.Interface())
 			return false
 		}
 	}
 
+	// 如果两个map内的数据完全一致，则返回true
 	return true
 }
 
 func TestBend_empty_bender_test(t *testing.T) {
 	tc := testCases[5]
+	fmt.Println(tc.name)
 	output, err := Bend(tc.mapping, tc.source, tc.context)
 	if !reflect.DeepEqual(err, tc.expectedErr) {
 		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
 	}
-	if mapsEqual(output.(map[string]interface{}), tc.expectedOutput.(map[string]interface{})) {
+
+	expect := tc.expectedOutput
+
+	if !CompareMaps(output, expect) {
 		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
 	}
 
@@ -283,15 +308,6 @@ func TestBend_testing(t *testing.T) {
 		fmt.Println("-----")
 	}
 
-	// tc := testCases[5]
-	// output, err := Bend(tc.mapping, tc.source, tc.context)
-	// if !reflect.DeepEqual(err, tc.expectedErr) {
-	// 	t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
-	// }
-	// if mapsEqual(output.(map[interface{}]interface{}), tc.expectedOutput.(map[interface{}]interface{})) {
-	// 	t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
-	// }
-
 }
 
 func readYAML() []byte {
@@ -325,11 +341,8 @@ func TestBend_with_IF(t *testing.T) {
 	if !reflect.DeepEqual(err, tc.expectedErr) {
 		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
 	}
-	// if !reflect.DeepEqual(output, tc.expectedOutput) {
-	// 	t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
-	// }
 
-	if mapsEqual(output.(map[string]interface{}), tc.expectedOutput.(map[string]interface{})) {
+	if !CompareMaps(output, tc.expectedOutput) {
 		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
 	}
 
@@ -345,11 +358,8 @@ func TestBend_with_Al(t *testing.T) {
 	if !reflect.DeepEqual(err, tc.expectedErr) {
 		t.Errorf("expected error %v, but got %v", tc.expectedErr, err)
 	}
-	// if !reflect.DeepEqual(output, tc.expectedOutput) {
-	// 	t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
-	// }
 
-	if mapsEqual(output.(map[string]interface{}), tc.expectedOutput.(map[string]interface{})) {
+	if !CompareMaps(output, tc.expectedOutput) {
 		t.Errorf("expected output %v, but got %v", tc.expectedOutput, output)
 	}
 }
@@ -371,4 +381,10 @@ func Test_2(t *testing.T) {
 		fmt.Println(err.Error())
 	}
 	fmt.Println("node result data:", data)
+	expect := map[string]interface{}{
+		"id": "123",
+	}
+	if !CompareMaps(data, expect) {
+		t.Errorf("expected output %v, but got %v", expect, data)
+	}
 }
